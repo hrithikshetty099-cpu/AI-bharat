@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { indianDestinations } from '../data/destinations'
+import { states, touristPlaces } from '../data/indiaDestinations'
 import Field from '../components/Field'
 import ProgressSteps from '../components/ProgressSteps'
 
 const interests = ['Nature', 'History', 'Heritage', 'Food', 'Shopping', 'Adventure', 'Beaches', 'Wildlife', 'Spiritual', 'Photography']
 const travelStyles = ['Budget', 'Balanced', 'Premium', 'Adventure', 'Relaxed', 'Family']
 const transportOptions = ['Bus', 'Train', 'Walking', 'Public Transport', 'Cab', 'Auto', 'Metro', 'Rental Car', 'Bike']
+const transportIcons = { Walking: '🚶', Bus: '🚌', Train: '🚆', Cab: '🚕', 'Rental Car': '🚗', Bike: '🏍', 'Public Transport': '🚇', Auto: '🛺', Metro: '🚇' }
 const foodOptions = ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'No Preference']
 
 const initialForm = {
@@ -20,7 +21,7 @@ function ChoiceGroup({ options, value, onChange, name }) {
         <label className={`choice ${value === option ? 'selected' : ''}`} key={option}>
           <input type="radio" name={name} value={option} checked={value === option} onChange={onChange} />
           <span className="choice-mark" aria-hidden="true" />
-          <span>{option}</span>
+          <span>{transportIcons[option]} {option}</span>
         </label>
       ))}
     </div>
@@ -33,6 +34,11 @@ export default function TripPlanner({ onGenerate, engineError }) {
   const [submitted, setSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [submissionError, setSubmissionError] = useState('')
+  const [originState, setOriginState] = useState('')
+  const [destinationState, setDestinationState] = useState('')
+  const originDistricts = [...new Set(touristPlaces.filter((place) => place.state === originState).map((place) => place.district))].sort()
+  const destinationDistricts = [...new Set(touristPlaces.filter((place) => place.state === destinationState).map((place) => place.district))].sort()
+  const destinationPlaces = touristPlaces.filter((place) => place.state === destinationState && (!form.destinationDistrict || place.district === form.destinationDistrict))
 
   const updateField = (event) => {
     const { name, value } = event.target
@@ -122,9 +128,9 @@ export default function TripPlanner({ onGenerate, engineError }) {
       <form className="planner-card" onSubmit={handleSubmit} noValidate>
         <div className="form-intro"><span className="section-kicker">01 / 04</span><div><h2>Tell us the essentials</h2><p>Start with the details that shape your perfect route.</p></div></div>
         <div className="form-grid">
-          <Field label="Where are you starting from?" hint="Optional"><input type="text" name="startingLocation" value={form.startingLocation} onChange={updateField} placeholder="e.g. Mangaluru" /></Field>
-          <Field label="Where do you want to go?" hint="Required" error={errors.destination} className="wide-field">
-            <div className="select-wrap"><select name="destination" value={form.destination} onChange={updateField} aria-label="Destination"><option value="">Search or select a destination</option>{indianDestinations.map((destination) => <option key={destination} value={destination}>{destination}</option>)}</select><span>⌄</span></div>
+          <Field label="Where are you starting from?" hint="Choose India state, then district"><div className="form-two"><select value={originState} onChange={(event) => { setOriginState(event.target.value); setForm((current) => ({ ...current, startingLocation: '' })) }}><option value="">Select state</option>{states.map((state) => <option key={state}>{state}</option>)}</select><select value={form.startingLocation} onChange={(event) => setForm((current) => ({ ...current, startingLocation: event.target.value }))} disabled={!originState}><option value="">Select district</option>{originDistricts.map((district) => <option key={district}>{district}</option>)}</select></div></Field>
+          <Field label="Where do you want to go?" hint="Choose state, district, then place" error={errors.destination} className="wide-field">
+            <div className="form-three"><select value={destinationState} onChange={(event) => { setDestinationState(event.target.value); setForm((current) => ({ ...current, destination: '', destinationDistrict: '' })) }} aria-label="Destination state"><option value="">Select state</option>{states.map((state) => <option key={state}>{state}</option>)}</select><select value={form.destinationDistrict || ''} onChange={(event) => setForm((current) => ({ ...current, destinationDistrict: event.target.value, destination: '' }))} disabled={!destinationState} aria-label="Destination district"><option value="">Select district</option>{destinationDistricts.map((district) => <option key={district}>{district}</option>)}</select><select name="destination" value={form.destination} onChange={updateField} disabled={!destinationState} aria-label="Destination place"><option value="">Select place</option>{destinationPlaces.map((place) => <option key={place.id} value={place.city}>{place.name} · {place.district}</option>)}</select></div>
           </Field>
           <Field label="When are you travelling?" error={errors.travelDate}><input type="date" name="travelDate" value={form.travelDate} onChange={updateField} min={new Date().toISOString().split('T')[0]} /></Field>
           <Field label="What time will you leave?" hint="Estimated"><input type="time" name="departureTime" value={form.departureTime} onChange={updateField} /></Field>

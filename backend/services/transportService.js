@@ -4,7 +4,14 @@ const demoBuses = [
 ]
 const bookings = new Map()
 
-export function searchDemoBuses() { return demoBuses }
+export function searchDemoBuses({ from, to, date, passengers = 1 } = {}) {
+  const requestedFrom = String(from || '').trim().toLowerCase()
+  const requestedTo = String(to || '').trim().toLowerCase()
+  return demoBuses
+    .filter((bus) => !requestedFrom || bus.boarding_point.toLowerCase().includes(requestedFrom) || requestedFrom.includes('mangaluru'))
+    .filter((bus) => !requestedTo || bus.dropping_point.toLowerCase().includes(requestedTo) || requestedTo.includes('bengaluru'))
+    .map((bus) => ({ ...bus, requested_date: date || null, passengers: Number(passengers) || 1, total_fare: bus.fare_per_passenger * (Number(passengers) || 1) }))
+}
 export function getDemoBus(id) { return demoBuses.find((bus) => bus.id === id) }
 export function createDemoBooking(input) {
   const booking = { booking_id: `DEMO-BOOKING-${String(bookings.size + 1).padStart(3, '0')}`, status: 'DEMO BOOKING', provider_booking_id: null, provider_ticket_url: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...input }

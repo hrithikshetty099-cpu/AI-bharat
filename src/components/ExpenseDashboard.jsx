@@ -1,16 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { addTripExpense, getTripExpenses } from '../services/liveService'
 
 const categories = ['Accommodation', 'Transport', 'Food', 'Entry Tickets', 'Activities', 'Shopping', 'Other']
 
-export default function ExpenseDashboard({ budget = 2500, initialBusCost = 0 }) {
+export default function ExpenseDashboard({ budget = 2500, initialBusCost = 0, tripId = 'demo-trip' }) {
   const [expenses, setExpenses] = useState([{ category: 'Transport', amount: initialBusCost, description: initialBusCost ? 'Demo bus booking' : 'Transport reserve' }, { category: 'Entry Tickets', amount: 340, description: 'Planned attractions' }].filter((expense) => expense.amount > 0))
   const [form, setForm] = useState({ category: 'Food', amount: '', description: '' })
   const [open, setOpen] = useState(false)
+  useEffect(() => { getTripExpenses(tripId).then((result) => { if (result.data?.length) setExpenses(result.data) }).catch(() => {}) }, [tripId])
   const total = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0)
   const addExpense = (event) => {
     event.preventDefault()
     if (!form.amount || Number(form.amount) <= 0) return
-    setExpenses((current) => [...current, { ...form, amount: Number(form.amount) }])
+    const expense = { ...form, amount: Number(form.amount), tripId }
+    setExpenses((current) => [...current, expense])
+    addTripExpense(expense).catch(() => {})
     setForm({ category: 'Food', amount: '', description: '' })
     setOpen(false)
   }

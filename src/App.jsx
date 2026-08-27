@@ -9,13 +9,12 @@ import BharatAI from './components/BharatAI'
 import BusSearch from './pages/BusSearch'
 import BookingDetails from './pages/BookingDetails'
 import BookingConfirmation from './pages/BookingConfirmation'
-import { getAllPlaces, getPlacesByCity } from './services/placeService'
+import Auth from './pages/Auth'
+import TravellerDetails from './pages/TravellerDetails'
+import TripReport from './pages/TripReport'
 import { generateItinerary } from './services/itineraryService'
 import { generateTrip } from './services/apiService'
 import { useState } from 'react'
-
-console.log(getAllPlaces())
-console.log(getPlacesByCity('Mysuru'))
 
 export default function App() {
   const [page, setPage] = useState('home')
@@ -26,6 +25,7 @@ export default function App() {
   const [pendingTrip, setPendingTrip] = useState(null)
   const [selectedBus, setSelectedBus] = useState(null)
   const [booking, setBooking] = useState(null)
+  const [user, setUser] = useState(null)
 
   const handleGenerate = async (tripData) => {
     try {
@@ -52,7 +52,8 @@ export default function App() {
 
   const handlePlanSubmit = async (trip) => {
     setPendingTrip(trip)
-    setPage('buses')
+    if (trip.transportation === 'Bus') setPage('buses')
+    else await handleGenerate(trip)
     return true
   }
 
@@ -68,13 +69,20 @@ export default function App() {
     setItinerary(generateItinerary(bookedTrip))
   }
 
-  if (itinerary && page !== 'live') return <><Itinerary itinerary={itinerary} serverResponse={serverResponse} tripData={tripData} onBack={() => { setItinerary(null); setPage('plan') }} onLive={() => setPage('live')} /><button className="floating-ai" onClick={() => setShowAI(true)}>✦ <span>Bharat AI</span></button>{showAI && <BharatAI onClose={() => setShowAI(false)} />}</>
-  if (page === 'explore') return <Explore onPlan={() => setPage('plan')} />
+  const beginJourney = () => setPage(user ? 'explore' : 'auth')
+  const completeAuth = (profile) => { setUser(profile); setPage('explore') }
+  const completeTraveller = (profile) => { setUser(profile); setPage('explore') }
+
+  if (itinerary && page !== 'live') return <><Itinerary itinerary={itinerary} serverResponse={serverResponse} tripData={tripData} onBack={() => { setItinerary(null); setPage('plan') }} onLive={() => setPage('live')} onAI={() => setShowAI(true)} /><button className="floating-ai" onClick={() => setShowAI(true)}>✦ <span>Bharat AI</span></button>{showAI && <BharatAI onClose={() => setShowAI(false)} />}</>
+  if (page === 'auth') return <Auth onComplete={completeAuth} onBack={() => setPage('home')} />
+  if (page === 'traveller') return <TravellerDetails user={user} onContinue={completeTraveller} onBack={() => setPage('auth')} />
+  if (page === 'explore') return <Explore onPlan={() => setPage('plan')} onAI={() => setShowAI(true)} />
   if (page === 'buses') return <BusSearch tripData={pendingTrip} onSelect={(bus) => { setSelectedBus(bus); setPage('booking') }} onBack={() => setPage('plan')} />
   if (page === 'booking') return <BookingDetails tripData={pendingTrip} bus={selectedBus} onBooked={handleBooking} onBack={() => setPage('buses')} />
   if (page === 'booking-confirmation') return <BookingConfirmation booking={booking} onGenerate={generateBookedTrip} onBack={() => setPage('plan')} />
-  if (page === 'live') return <><LiveTrip itinerary={itinerary || generateItinerary({ destination: 'Mysuru', days: 1, budget: 2000, interests: ['History'], travellers: 1 })} tripData={tripData} onBack={() => setPage(itinerary ? 'plan' : 'home')} onSafety={() => setPage('safety')} onAI={() => setShowAI(true)} />{showAI && <BharatAI onClose={() => setShowAI(false)} />}</>
+  if (page === 'live') return <><LiveTrip itinerary={itinerary || generateItinerary({ destination: 'Mysuru', days: 1, budget: 2000, interests: ['History'], travellers: 1 })} tripData={tripData} onBack={() => setPage(itinerary ? 'plan' : 'home')} onSafety={() => setPage('safety')} onAI={() => setShowAI(true)} onComplete={() => setPage('report')} />{showAI && <BharatAI onClose={() => setShowAI(false)} />}</>
+  if (page === 'report') return <TripReport itinerary={itinerary} tripData={tripData} booking={booking} onBack={() => setPage('live')} onHome={() => { setItinerary(null); setPage('home') }} />
   if (page === 'safety') return <SafetyCenter onBack={() => setPage('home')} />
   if (page === 'plan') return <TripPlanner onGenerate={handlePlanSubmit} />
-  return <><Home onPlan={() => setPage('plan')} onExplore={() => setPage('explore')} onLive={() => setPage('live')} onSafety={() => setPage('safety')} onAI={() => setShowAI(true)} onDemo={launchDemo} />{showAI && <BharatAI onClose={() => setShowAI(false)} />}</>
+  return <><Home onPlan={beginJourney} onExplore={() => setPage('explore')} onLive={() => setPage('live')} onSafety={() => setPage('safety')} onAI={() => setShowAI(true)} onDemo={launchDemo} />{showAI && <BharatAI onClose={() => setShowAI(false)} />}</>
 }

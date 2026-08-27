@@ -7,11 +7,12 @@ dotenv.config({ path: fileURLToPath(new URL('../.env', import.meta.url)) })
 const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
 function createClient() {
-  if (!process.env.OPENAI_API_KEY) {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey || apiKey.startsWith('YOUR_')) {
     throw new Error('OPENAI_API_KEY is not configured on the backend.')
   }
 
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  return new OpenAI({ apiKey })
 }
 
 function validateAIPlaces(itinerary, places) {
