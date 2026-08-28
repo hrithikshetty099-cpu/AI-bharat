@@ -9,8 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@vitejs/plugin-react": "latest",
     "firebase": "^12.18.0",
+    "leaflet": "^1.9.4",
     "react": "latest",
     "react-dom": "latest",
     "vite": "latest"
